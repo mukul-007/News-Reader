@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">NewsReader</string>
+    <string name="headlines">Top-Headlines</string>
+    <string name="author">Author</string>
+    <string name="date">02 January 2000</string>
+    <string name="title">Title</string>
+    <string name="desc">Description</string>
+    <string name="content">Content</string>
+</resources>
