@@ -6,10 +6,4 @@
 
 ![News](https://user-images.githubusercontent.com/62852976/93643594-f33bce80-fa1d-11ea-966c-b9dd3911bef2.png)             
 
-
-
-![search](https://user-images.githubusercontent.com/62852976/93664857-90831b00-fa8f-11ea-830f-107d09c70f8e.png)
-
-
-
-
+Please do visit the images folder for more images
