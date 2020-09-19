@@ -48,11 +48,17 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder>{
     public void onBindViewHolder(@NonNull MyViewHolder holder, int position) {
         final MyViewHolder hold = holder;
         Article article = articles.get(position);
+
         RequestOptions requestOptions = new RequestOptions();
         requestOptions.placeholder(Utils.getRandomDrawbleColor());
         requestOptions.error(Utils.getRandomDrawbleColor());
         requestOptions.diskCacheStrategy(DiskCacheStrategy.ALL);
         requestOptions.centerCrop();
+
+//
+//        String urlToImage = article.getUrlToImage();
+
+//        System.out.println("Position : " + position + " " + urlToImage);
 
         Glide.with(context)
                 .load(article.getUrlToImage())
@@ -97,7 +103,7 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder>{
 
     public class MyViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
 
-        TextView title, desc, author, published_at, source, time, content;
+        TextView title, desc, author, published_at, source, time;
         ImageView imageView;
         ProgressBar progressBar;
         OnItemClickListener onItemClickListener;
