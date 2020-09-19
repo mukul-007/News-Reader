@@ -2,11 +2,16 @@ package com.example.newsreader;
 
 
 import android.app.SearchManager;
+import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.ImageView;
 import android.widget.SearchView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.newsreader.Model.Article;
@@ -18,38 +23,53 @@ import java.util.ArrayList;
 import java.util.List;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityOptionsCompat;
+import androidx.core.util.Pair;
+import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements SwipeRefreshLayout.OnRefreshListener{
 
     public static final String API_KEY = "a0cc49665474441c80a93b79b10408c1";
     private RecyclerView recyclerView;
     private RecyclerView.LayoutManager layoutManager;
     private List<Article> articles = new ArrayList<>();
     private MyAdapter myAdapter;
+    private SwipeRefreshLayout swipeRefreshLayout;
     private String TAG = MainActivity.class.getSimpleName();
+    private TextView topHeadlines;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        swipeRefreshLayout = findViewById(R.id.swipe_refresh_layout);
+        swipeRefreshLayout.setOnRefreshListener(this);
+        swipeRefreshLayout.setColorSchemeResources(R.color.colorAccent);
 
+        topHeadlines = findViewById(R.id.topHeadlines);
         recyclerView = findViewById(R.id.recyclerView);
         layoutManager = new LinearLayoutManager(MainActivity.this);
         recyclerView.setLayoutManager(layoutManager);
         recyclerView.setItemAnimator(new DefaultItemAnimator());
         recyclerView.setNestedScrollingEnabled(false);
+        myAdapter = new MyAdapter(articles, MainActivity.this);
+        recyclerView.setAdapter(myAdapter);
 
-        loadJson("");
+        onLoadingSwipeRefresh("");
 
     }
 
     public void loadJson(final String keyWord) {
+
+        swipeRefreshLayout.setRefreshing(true);
+        topHeadlines.setVisibility(View.INVISIBLE);
 
         ApiInterface apiInterface = ApiClient.getApiClient().create(ApiInterface.class);
 
@@ -72,25 +92,57 @@ public class MainActivity extends AppCompatActivity {
                         articles.clear();
                     }
 
-                    articles = response.body().getArticles();
-                    myAdapter = new MyAdapter(articles, MainActivity.this);
-                    recyclerView.setAdapter(myAdapter);
+                    articles.addAll(response.body().getArticles());
                     myAdapter.notifyDataSetChanged();
+                    initListener();
 
-                    for (Article article : articles){
-                        System.out.println(article.toString());
-                    }
+                    topHeadlines.setVisibility(View.VISIBLE);
+                    swipeRefreshLayout.setRefreshing(false);
+//                    for (Article article : articles){
+//                        System.out.println(article.toString());
+//                    }
                 } else {
+                    topHeadlines.setVisibility(View.INVISIBLE);
+                    swipeRefreshLayout.setRefreshing(false);
                     Toast.makeText(MainActivity.this, "No Result!", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(Call<News> call, Throwable t) {
-
+                topHeadlines.setVisibility(View.INVISIBLE);
+                swipeRefreshLayout.setRefreshing(false);
             }
         });
+    }
 
+    private void initListener(){
+        myAdapter.setOnItemClickListener(new MyAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(View view, int position) {
+                ImageView imageView = view.findViewById(R.id.image);
+                Intent intent = new Intent(MainActivity.this, DetailActivity.class);
+
+                Article article = articles.get(position);
+                intent.putExtra("url", article.getUrl());
+                intent.putExtra("title", article.getTitle());
+                intent.putExtra("img", article.getUrlToImage());
+                intent.putExtra("date", article.getPublishedAt());
+                intent.putExtra("source", article.getSource().getName());
+                intent.putExtra("author", article.getAuthor());
+
+                Pair<View, String> pair = Pair.create((View) imageView, ViewCompat.getTransitionName(imageView));
+                ActivityOptionsCompat optionsCompat = ActivityOptionsCompat.makeSceneTransitionAnimation(
+                        MainActivity.this, pair
+                );
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                    startActivity(intent, optionsCompat.toBundle());
+                }else {
+                    startActivity(intent);
+                }
+            }
+        });
     }
 
     @Override
@@ -107,19 +159,32 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean onQueryTextSubmit(String query) {
                 if(query.length() > 2){
-                    loadJson(query);
+                    onLoadingSwipeRefresh(query);
                 }
                 return false;
             }
 
             @Override
             public boolean onQueryTextChange(String newText) {
-                loadJson(newText);
                 return false;
             }
         });
 
         searchItem.getIcon().setVisible(false, false);
         return true;
+    }
+
+    @Override
+    public void onRefresh() {
+        loadJson("");
+    }
+
+    private void onLoadingSwipeRefresh(final String keyWord){
+        swipeRefreshLayout.post(new Runnable() {
+            @Override
+            public void run() {
+                loadJson(keyWord);
+            }
+        });
     }
 }
